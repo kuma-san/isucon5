@@ -267,7 +267,7 @@ function getRecentComments() {
     while ($comment = $stmt->fetch()) {
         $comments[] = $comment;
     }
-    redis()->set('isucon_recent_comments', $comments);
+    redis()->set('isucon_recent_comments', json_encode($comments));
     return $comments;
 }
 
