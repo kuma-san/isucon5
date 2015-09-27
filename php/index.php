@@ -294,23 +294,25 @@ SQL;
         list($title) = preg_split('/\n/', $entry['body']);
         $entry['title'] = $title;
         $entries_of_friends[] = $entry;
-        if (sizeof($entries_of_friends) >= 10) break;
+        // if (sizeof($entries_of_friends) >= 10) break;
     }
 
     $comments_of_friends = array();
     $cof_query = <<<SQL
 SELECT * FROM comments
+INNER JOIN entry ON entry.id = comments.entry_id
 WHERE (SELECT 1 FROM relations WHERE relations.one = comments.user_id AND relations.another = ?) = 1
+    AND (entry.is_private != 1 OR entry.user_id = ? OR entry.user_id = ? OR 1 =(SELECT 1 FROM relations WHERE one=?) AND another=entry.user_id)
 ORDER BY created_at DESC LIMIT 10
 SQL;
-    $stmt = db_execute($cof_query, array($_SESSION['user_id']));
+    $stmt = db_execute($cof_query, array($_SESSION['user_id'], $_SESSION['user_id'], $_SESSION['user_id']));
     while ($comment = $stmt->fetch()) {
         // if (!is_friend($comment['user_id'])) continue;
-        $entry = db_execute('SELECT * FROM entries WHERE id = ?', array($comment['entry_id']))->fetch();
-        $entry['is_private'] = ($entry['private'] == 1);
-        if ($entry['is_private'] && !permitted($entry['user_id'])) continue;
+        // $entry = db_execute('SELECT * FROM entries WHERE id = ?', array($comment['entry_id']))->fetch();
+        // $entry['is_private'] = ($entry['private'] == 1);
+        // if ($entry['is_private'] && !permitted($entry['user_id'])) continue;
         $comments_of_friends[] = $comment;
-        if (sizeof($comments_of_friends) >= 10) break;
+        // if (sizeof($comments_of_friends) >= 10) break;
     }
 
     $friends_query = 'SELECT * FROM relations WHERE one = ? OR another = ? ORDER BY created_at DESC';
