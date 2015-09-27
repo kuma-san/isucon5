@@ -243,6 +243,7 @@ function mark_footprint($user_id)
     if ($user_id != current_user()['id']) {
         $query = 'INSERT INTO footprints (user_id,owner_id) VALUES (?,?)';
         db_execute($query, array($user_id, current_user()['id']));
+        redis()->del('isucon_footpoints_' . $user_id);
     }
 }
 
@@ -379,6 +380,11 @@ function getFriends() {
 }
 
 function getFootpoints() {
+    $cache = redis()->get('isucon_footpoints_' . current_user()['id']);
+    if ($cache !== false) {
+        return json_decode($cache, true);
+    }
+
     $query = <<<SQL
 SELECT user_id, owner_id, DATE(created_at) AS date, MAX(created_at) AS updated
 FROM footprints
@@ -387,7 +393,9 @@ GROUP BY user_id, owner_id, DATE(created_at)
 ORDER BY updated DESC
 LIMIT 10
 SQL;
-    return db_execute($query, array(current_user()['id']))->fetchAll();
+    $footpoints = db_execute($query, array(current_user()['id']))->fetchAll();
+    redis()->set('isucon_footpoints_' . current_user()['id'], $footpoints);
+    return $footpoints;
 }
 
 // トップページ。プロフィール･自分の最近の日記･日記へのあしあと･日記へのコメント･友だちの日記･友達のコメント
