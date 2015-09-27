@@ -1,16 +1,16 @@
 <?php
 require_once 'vendor/autoload.php';
 
-xhprof_enable(XHPROF_FLAGS_CPU + XHPROF_FLAGS_MEMORY);
-register_shutdown_function(function() {
-    $xhprof_data = xhprof_disable();
-    $XHPROF_ROOT = dirname(__FILE__);
-    include_once $XHPROF_ROOT . "/xhprof-0.9.3/xhprof_lib/utils/xhprof_lib.php";
-    include_once $XHPROF_ROOT . "/xhprof-0.9.3/xhprof_lib/utils/xhprof_runs.php";
+// xhprof_enable(XHPROF_FLAGS_CPU + XHPROF_FLAGS_MEMORY);
+// register_shutdown_function(function() {
+//     $xhprof_data = xhprof_disable();
+//     $XHPROF_ROOT = dirname(__FILE__);
+//     include_once $XHPROF_ROOT . "/xhprof-0.9.3/xhprof_lib/utils/xhprof_lib.php";
+//     include_once $XHPROF_ROOT . "/xhprof-0.9.3/xhprof_lib/utils/xhprof_runs.php";
 
-    $xhprof_runs = new XHProfRuns_Default();
-    $xhprof_runs->save_run($xhprof_data, "xhprof_testing", time());
-});
+//     $xhprof_runs = new XHProfRuns_Default();
+//     $xhprof_runs->save_run($xhprof_data, "xhprof_testing", time());
+// });
 
 date_default_timezone_set('Asia/Tokyo');
 mb_internal_encoding('UTF-8');
@@ -243,7 +243,7 @@ function mark_footprint($user_id)
     if ($user_id != current_user()['id']) {
         $query = 'INSERT INTO footprints (user_id,owner_id) VALUES (?,?)';
         db_execute($query, array($user_id, current_user()['id']));
-        redis()->del('isucon_footpoints_' . $user_id);
+        redis()->del('isucon_footprints_' . $user_id);
     }
 }
 
@@ -398,21 +398,21 @@ function getFriends() {
 }
 
 function getFootpoints() {
-    $cache = redis()->get('isucon_footpoints_' . current_user()['id']);
+    $cache = redis()->get('isucon_footprints_' . current_user()['id']);
     if ($cache !== false) {
         return json_decode($cache, true);
     }
 
     $query = <<<SQL
-SELECT user_id, owner_id, DATE(created_at) AS date, MAX(created_at) AS updated
+SELECT owner_id, DATE(created_at) AS date, MAX(created_at) AS updated
 FROM footprints
 WHERE user_id = ?
-GROUP BY user_id, owner_id, DATE(created_at)
+GROUP BY owner_id, DATE(created_at)
 ORDER BY updated DESC
 LIMIT 10
 SQL;
     $footpoints = db_execute($query, array(current_user()['id']))->fetchAll();
-    redis()->set('isucon_footpoints_' . current_user()['id'], json_encode($footpoints));
+    redis()->set('isucon_footprints_' . current_user()['id'], json_encode($footpoints));
     return $footpoints;
 }
 
