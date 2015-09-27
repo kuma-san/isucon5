@@ -9,7 +9,7 @@ register_shutdown_function(function() {
     include_once $XHPROF_ROOT . "/xhprof-0.9.3/xhprof_lib/utils/xhprof_runs.php";
 
     $xhprof_runs = new XHProfRuns_Default();
-    $xhprof_runs->save_run($xhprof_data, "xhprof_testing", preg_replace('[^0-9a-zA-Z]', '', $_SERVER['REQUEST_URI'] . '_' . time()));
+    $xhprof_runs->save_run($xhprof_data, "xhprof_testing", time());
 });
 
 date_default_timezone_set('Asia/Tokyo');
@@ -310,14 +310,9 @@ $app->get('/logout', function () use ($app) {
     $app->redirect('/login');
 });
 
-// トップページ。プロフィール･自分の最近の日記･日記へのあしあと･日記へのコメント･友だちの日記･友達のコメント
-$app->get('/', function () use ($app) {
-    authenticated();
-
-    $profile = db_execute('SELECT * FROM profiles WHERE user_id = ?', array(current_user()['id']))->fetch();
-
+function getEntriesByUserId($userId) {
     $entries_query = 'SELECT * FROM entries WHERE user_id = ? ORDER BY created_at LIMIT 5';
-    $stmt = db_execute($entries_query, array(current_user()['id']));
+    $stmt = db_execute($entries_query, array($userId));
     $entries = array();
     while ($entry = $stmt->fetch()) {
         $entry['is_private'] = ($entry['private'] == 1);
@@ -326,8 +321,11 @@ $app->get('/', function () use ($app) {
         $entry['content'] = $content;
         $entries[] = $entry;
     }
+    return $entries;
+}
 
-    $comments_for_me_query = <<<SQL
+function getCommentsForMe() {
+        $comments_for_me_query = <<<SQL
 SELECT c.id AS id, c.entry_id AS entry_id, c.user_id AS user_id, c.comment AS comment, c.created_at AS created_at
 FROM comments c
 JOIN entries e ON c.entry_id = e.id
@@ -335,15 +333,17 @@ WHERE e.user_id = ?
 ORDER BY c.created_at DESC
 LIMIT 10
 SQL;
-    $comments_for_me = db_execute($comments_for_me_query, array(current_user()['id']))->fetchAll();
+    return db_execute($comments_for_me_query, array(current_user()['id']))->fetchAll();
+}
 
+function getEntriesOfFriends($userId) {
     $entries_of_friends = array();
     $eof_query = <<<SQL
 SELECT * FROM entries
 WHERE (SELECT 1 FROM relations WHERE relations.one = entries.user_id AND relations.another = ?) = 1
 ORDER BY created_at DESC LIMIT 10
 SQL;
-    $stmt = db_execute($eof_query, array($_SESSION['user_id']));
+    $stmt = db_execute($eof_query, array($userId));
     while ($entry = $stmt->fetch()) {
         // if (!is_friend($entry['user_id'])) continue;
         list($title) = preg_split('/\n/', $entry['body']);
@@ -351,7 +351,10 @@ SQL;
         $entries_of_friends[] = $entry;
         // if (sizeof($entries_of_friends) >= 10) break;
     }
+    return $entries_of_friends;
+}
 
+function getCommentsOfFriends() {
     $comments_of_friends = array();
     $stmt = db_execute('SELECT * FROM comments ORDER BY created_at DESC LIMIT 1000');
     while ($comment = $stmt->fetch()) {
@@ -362,14 +365,20 @@ SQL;
         $comments_of_friends[] = $comment;
         if (sizeof($comments_of_friends) >= 10) break;
     }
+    return $comments_of_friends;
+}
 
+function getFriends() {
     $friends_query = 'SELECT * FROM relations WHERE one = ? ORDER BY created_at DESC';
     $friends = array();
     $stmt = db_execute($friends_query, array(current_user()['id']));
     while ($rel = $stmt->fetch()) {
         if (!isset($friends[$rel['another']])) $friends[$rel['another']] = $rel['created_at'];
     }
+    return $friends;
+}
 
+function getFootpoints() {
     $query = <<<SQL
 SELECT user_id, owner_id, DATE(created_at) AS date, MAX(created_at) AS updated
 FROM footprints
@@ -378,7 +387,20 @@ GROUP BY user_id, owner_id, DATE(created_at)
 ORDER BY updated DESC
 LIMIT 10
 SQL;
-    $footprints = db_execute($query, array(current_user()['id']))->fetchAll();
+    return db_execute($query, array(current_user()['id']))->fetchAll();
+}
+
+// トップページ。プロフィール･自分の最近の日記･日記へのあしあと･日記へのコメント･友だちの日記･友達のコメント
+$app->get('/', function () use ($app) {
+    authenticated();
+
+    $profile = db_execute('SELECT * FROM profiles WHERE user_id = ?', array(current_user()['id']))->fetch();
+    $entries = getEntriesByUserId(current_user()['id']);
+    $comments_for_me = getCommentsForMe();
+    $entries_of_friends = getEntriesOfFriends(current_user()['id']);
+    $comments_of_friends = getCommentsOfFriends();
+    $friends = getFriends();
+    $footprints = getFootpoints();
 
     $locals = array(
         'user' => current_user(),
