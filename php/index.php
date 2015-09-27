@@ -322,10 +322,10 @@ SQL;
 SELECT * FROM comments
 INNER JOIN entry ON entry.id = comments.entry_id
 WHERE (SELECT 1 FROM relations WHERE relations.one = comments.user_id AND relations.another = ?) = 1
-    AND (entry.is_private != 1 OR entry.user_id = ? OR (SELECT COUNT(1) AS cnt FROM relations WHERE one = ? AND another = ?)=1)
+    AND (entry.is_private != 1 OR entry.user_id = ? OR (SELECT COUNT(1) AS cnt FROM relations WHERE one = entry.user_id AND another = ?)=1)
 ORDER BY created_at DESC LIMIT 10
 SQL;
-    $stmt = db_execute($cof_query, array($_SESSION['user_id']));
+    $stmt = db_execute($cof_query, array($_SESSION['user_id'], $_SESSION['user_id'], $_SESSION['user_id']));
     while ($comment = $stmt->fetch()) {
         // if (!is_friend($comment['user_id'])) continue;
         // $entry = db_execute('SELECT * FROM entries WHERE id = ?', array($comment['entry_id']))->fetch();
