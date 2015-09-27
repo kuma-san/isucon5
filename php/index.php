@@ -318,14 +318,21 @@ SQL;
     }
 
     $comments_of_friends = array();
-    $stmt = db_execute('SELECT * FROM comments ORDER BY created_at DESC LIMIT 1000');
+    $cof_query = <<<SQL
+SELECT * FROM comments
+INNER JOIN entry ON entry.id = comments.entry_id
+WHERE (SELECT 1 FROM relations WHERE relations.one = comments.user_id AND relations.another = ?) = 1
+    AND (entry.is_private != 1 OR entry.user_id = ? OR (SELECT COUNT(1) AS cnt FROM relations WHERE one = ? AND another = ?)=1)
+ORDER BY created_at DESC LIMIT 10
+SQL;
+    $stmt = db_execute($cof_query, array($_SESSION['user_id']));
     while ($comment = $stmt->fetch()) {
-        if (!is_friend($comment['user_id'])) continue;
-        $entry = db_execute('SELECT * FROM entries WHERE id = ?', array($comment['entry_id']))->fetch();
-        $entry['is_private'] = ($entry['private'] == 1);
-        if ($entry['is_private'] && !permitted($entry['user_id'])) continue;
+        // if (!is_friend($comment['user_id'])) continue;
+        // $entry = db_execute('SELECT * FROM entries WHERE id = ?', array($comment['entry_id']))->fetch();
+        // $entry['is_private'] = ($entry['private'] == 1);
+        // if ($entry['is_private'] && !permitted($entry['user_id'])) continue;
         $comments_of_friends[] = $comment;
-        if (sizeof($comments_of_friends) >= 10) break;
+        // if (sizeof($comments_of_friends) >= 10) break;
     }
 
     $friends_query = 'SELECT * FROM relations WHERE one = ? OR another = ? ORDER BY created_at DESC';
@@ -500,7 +507,7 @@ $app->get('/footprints', function () use ($app) {
 SELECT user_id, owner_id, DATE(created_at) AS date, MAX(created_at) as updated
 FROM footprints
 WHERE user_id = ?
-GROUP BY user_id, owner_id, DATE(created_at)
+GROUP BY owner_id, DATE(created_at)
 ORDER BY updated DESC
 LIMIT 50
 SQL;
