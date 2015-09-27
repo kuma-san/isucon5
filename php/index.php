@@ -351,8 +351,8 @@ SQL;
     }
 
     $comments_of_friends = array();
-    $recent_comments = getRecentComments();
-    foreach ($recent_comments as $comment) {
+    $stmt = db_execute('SELECT * FROM comments ORDER BY created_at DESC LIMIT 1000');
+    while ($comment = $stmt->fetch()) {
         if (!is_friend($comment['user_id'])) continue;
         $entry = getEntry($comment['entry_id']);
         $entry['is_private'] = ($entry['private'] == 1);
