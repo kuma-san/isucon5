@@ -265,7 +265,7 @@ function getRecentComments() {
         return json_decode($cache, true);
     }
 
-    $stmt = db_execute('SELECT * FROM comments ORDER BY created_at DESC LIMIT 1000');
+    $stmt = db_execute('SELECT * FROM comments WHERE created_at > "2013-01-01" ORDER BY created_at DESC LIMIT 1000');
     $comments = [];
     while ($comment = $stmt->fetch()) {
         $comments[] = $comment;
