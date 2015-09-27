@@ -198,7 +198,7 @@ function user_from_account($account_name)
 function is_friend($another_id)
 {
     $user_id = $_SESSION['user_id'];
-    $query = 'SELECT COUNT(1) AS cnt FROM relations WHERE (one = ? AND another = ?) OR (one = ? AND another = ?)';
+    $query = 'SELECT COUNT(1) AS cnt FROM relations WHERE one = ? AND another = ?';
     $cnt = db_execute($query, array($user_id, $another_id, $another_id, $user_id))->fetch()['cnt'];
     return $cnt > 0 ? true : false;
 }
@@ -283,9 +283,13 @@ SQL;
     $comments_for_me = db_execute($comments_for_me_query, array(current_user()['id']))->fetchAll();
 
     $entries_of_friends = array();
-    $stmt = db_execute('SELECT * FROM entries WHERE (SELECT COUNT(1) AS cnt FROM relations WHERE (one = ? AND another = entries.id) OR (one = entries.id AND another = ?)) = 1 ORDER BY created_at DESC LIMIT 10', array(
-            $_SESSION['user_id'], $_SESSION['user_id']
-        ));
+    $eof_query = <<<SQL
+SELECT * FROM entries
+INNER JOIN relations ON entries.user_id = relations.one
+WHERE relations.another = ?
+ORDER BY created_at DESC LIMIT 10
+SQL;
+    $stmt = db_execute($eof_query, array($_SESSION['user_id']));
     while ($entry = $stmt->fetch()) {
         // if (!is_friend($entry['user_id'])) continue;
         list($title) = preg_split('/\n/', $entry['body']);
@@ -295,9 +299,13 @@ SQL;
     }
 
     $comments_of_friends = array();
-    $stmt = db_execute('SELECT * FROM comments WHERE (SELECT COUNT(1) AS cnt FROM relations WHERE (one = ? AND another = comments.id) OR (one = comments.id AND another = ?)) = 1 ORDER BY created_at DESC LIMIT 10', array(
-            $_SESSION['user_id'], $_SESSION['user_id']
-        ));
+    $cof_query = <<<SQL
+SELECT * FROM comments
+INNER JOIN relations ON comments.user_id = relations.one
+WHERE relations.another = ?
+ORDER BY created_at DESC LIMIT 10
+SQL;
+    $stmt = db_execute($cof_query, array($_SESSION['user_id']));
     while ($comment = $stmt->fetch()) {
         // if (!is_friend($comment['user_id'])) continue;
         $entry = db_execute('SELECT * FROM entries WHERE id = ?', array($comment['entry_id']))->fetch();
