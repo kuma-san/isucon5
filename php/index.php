@@ -171,10 +171,10 @@ function user_from_account($account_name)
     }
 
     $key = 'isucon_user_' + $account_name;
-    // $cache = redis()->get($key);
-    // if ($cache !== false) {
-    //     return $users[$account_name] = json_decode($cache);
-    // }
+    $cache = redis()->get($key);
+    if ($cache !== false) {
+        return $users[$account_name] = json_decode($cache, true);
+    }
     $user = db_execute('SELECT * FROM users WHERE account_name = ?', array($account_name))->fetch();
     if (!$user) abort_content_not_found();
 
