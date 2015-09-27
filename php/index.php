@@ -29,7 +29,7 @@ class Isucon5View extends \Slim\View
         include_once $XHPROF_ROOT . "/xhprof-0.9.3/xhprof_lib/utils/xhprof_runs.php";
 
         $xhprof_runs = new XHProfRuns_Default();
-        $run_id = $xhprof_runs->save_run($xhprof_data, "xhprof_testing_" . $_SERVER['REQUEST_URI']);
+        $run_id = $xhprof_runs->save_run($xhprof_data, "xhprof_testing_" . urlencode($_SERVER['REQUEST_URI']));
         return parent::render($template);
     }
 }
