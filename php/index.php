@@ -528,6 +528,9 @@ $app->post('/friends/:account_name', function ($account_name) use ($app) {
         $user = user_from_account($account_name);
         if (!$user) abort_content_not_found();
         db_execute('INSERT INTO relations (one, another) VALUES (?,?), (?,?)', array(current_user()['id'], $user['id'], $user['id'], current_user()['id']));
+
+        $key = 'isucon_user_' . $one . '_' . $another;
+        redis()->set($key, json_encode(true));
         $app->redirect('/friends');
     }
 });
