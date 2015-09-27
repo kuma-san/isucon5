@@ -312,7 +312,7 @@ $app->get('/logout', function () use ($app) {
 });
 
 function getEntriesByUserId($userId) {
-    $entries_query = 'SELECT * FROM entries WHERE user_id = ? ORDER BY created_at LIMIT 5';
+    $entries_query = 'SELECT * FROM entries WHERE user_id = ? AND created_at > "2013-01-01" ORDER BY created_at LIMIT 5';
     $stmt = db_execute($entries_query, array($userId));
     $entries = array();
     while ($entry = $stmt->fetch()) {
