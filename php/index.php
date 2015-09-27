@@ -284,7 +284,7 @@ SQL;
 
     $entries_of_friends = array();
     $stmt = db_execute('SELECT * FROM entries WHERE (SELECT COUNT(1) AS cnt FROM relations WHERE (one = ? AND another = ?) OR (one = ? AND another = ?)) = 1 ORDER BY created_at DESC LIMIT 10', array(
-            $user_id, $another_id, $another_id, $user_id
+            $_SESSION['user_id'], $comment['user_id'], $comment['user_id'], $_SESSION['user_id']
         ));
     while ($entry = $stmt->fetch()) {
         // if (!is_friend($entry['user_id'])) continue;
@@ -296,7 +296,7 @@ SQL;
 
     $comments_of_friends = array();
     $stmt = db_execute('SELECT * FROM comments WHERE (SELECT COUNT(1) AS cnt FROM relations WHERE (one = ? AND another = ?) OR (one = ? AND another = ?)) = 1 ORDER BY created_at DESC LIMIT 10', array(
-            $user_id, $another_id, $another_id, $user_id
+            $_SESSION['user_id'], $comment['user_id'], $comment['user_id'], $_SESSION['user_id']
         ));
     while ($comment = $stmt->fetch()) {
         // if (!is_friend($comment['user_id'])) continue;
