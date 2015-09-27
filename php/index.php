@@ -1,5 +1,5 @@
 <?php
-require 'vendor/autoload.php';
+require_once 'vendor/autoload.php';
 
 date_default_timezone_set('Asia/Tokyo');
 mb_internal_encoding('UTF-8');
@@ -96,10 +96,12 @@ function db_execute($query, $args = array())
 function authenticate($email, $password)
 {
     $query = <<<SQL
+
 SELECT u.id AS id, u.account_name AS account_name, u.nick_name AS nick_name, u.email AS email
 FROM users u
 JOIN salts s ON u.id = s.user_id
 WHERE u.email = ? AND u.passhash = SHA2(CONCAT(?, s.salt), 512)
+
 SQL;
     $result = db_execute($query, array($email, $password))->fetch();
     if (!$result) {
@@ -181,22 +183,26 @@ function prefectures()
     return $PREFS;
 }
 
+// ログイン画面
 $app->get('/login', function () use ($app) {
     $app->view->setLayout(null);
     $app->render('login.php', array('message' => '高負荷に耐えられるSNSコミュニティサイトへようこそ!'));
 });
 
+// ログイン処理
 $app->post('/login', function () use ($app) {
     $params = $app->request->params();
     authenticate($params['email'], $params['password']);
     $app->redirect('/');
 });
 
+// ログアウト
 $app->get('/logout', function () use ($app) {
     $_SESSION['user_id'] = null;
     $app->redirect('/login');
 });
 
+// トップページ。プロフィール･自分の最近の日記･日記へのあしあと･日記へのコメント･友だちの日記･友達のコメント
 $app->get('/', function () use ($app) {
     authenticated();
 
@@ -275,6 +281,7 @@ SQL;
     $app->render('index.php', $locals);
 });
 
+// ユーザーのプロフィールページ
 $app->get('/profile/:account_name', function ($account_name) use ($app) {
     authenticated();
     $owner = user_from_account($account_name);
@@ -304,6 +311,7 @@ $app->get('/profile/:account_name', function ($account_name) use ($app) {
     $app->render('profile.php', $locals);
 });
 
+// ユーザーのプロフィールページの更新。自分のみできる
 $app->post('/profile/:account_name', function ($account_name) use ($app) {
     authenticated();
     if ($account_name != current_user()['account_name']) {
@@ -330,6 +338,7 @@ SQL;
     $app->redirect('/profile/'.$account_name);
 });
 
+// ユーザーの日記一覧。プライベートなものはオーナーのみが見える
 $app->get('/diary/entries/:account_name', function ($account_name) use ($app) {
     authenticated();
     $owner = user_from_account($account_name);
@@ -356,6 +365,7 @@ $app->get('/diary/entries/:account_name', function ($account_name) use ($app) {
     $app->render('entries.php', $locals);
 });
 
+// 記事の個別ページ･プライベートなものは自オーナーにだけ
 $app->get('/diary/entry/:entry_id', function ($entry_id) use ($app) {
     authenticated();
     $entry = db_execute('SELECT * FROM entries WHERE id = ?', array($entry_id))->fetch();
@@ -378,6 +388,7 @@ $app->get('/diary/entry/:entry_id', function ($entry_id) use ($app) {
     $app->render('entry.php', $locals);
 });
 
+// 記事の投稿
 $app->post('/diary/entry', function () use ($app) {
     authenticated();
     $query = 'INSERT INTO entries (user_id, private, body) VALUES (?,?,?)';
@@ -389,6 +400,7 @@ $app->post('/diary/entry', function () use ($app) {
     $app->redirect('/diary/entries/'.current_user()['account_name']);
 });
 
+// 記事ID指定でコメント
 $app->post('/diary/comment/:entry_id', function ($entry_id) use ($app) {
     authenticated();
     $entry = db_execute('SELECT * FROM entries WHERE id = ?', array($entry_id))->fetch();
@@ -403,6 +415,7 @@ $app->post('/diary/comment/:entry_id', function ($entry_id) use ($app) {
     $app->redirect('/diary/entry/'.$entry['id']);
 });
 
+// あしあと一覧
 $app->get('/footprints', function () use ($app) {
     authenticated();
     $query = <<<SQL
@@ -417,6 +430,7 @@ SQL;
     $app->render('footprints.php', array('footprints' => $footprints));
 });
 
+// 友達一覧
 $app->get('/friends', function () use ($app) {
     authenticated();
     $query = 'SELECT * FROM relations WHERE one = ? OR another = ? ORDER BY created_at DESC';
@@ -429,6 +443,7 @@ $app->get('/friends', function () use ($app) {
     $app->render('friends.php', array('friends' => $friends));
 });
 
+// 指定した相手と友だちになる
 $app->post('/friends/:account_name', function ($account_name) use ($app) {
     authenticated();
     if (!is_friend_account($account_name)) {
