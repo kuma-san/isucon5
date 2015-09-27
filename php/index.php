@@ -325,6 +325,24 @@ function getEntriesByUserId($userId) {
     return $entries;
 }
 
+function getEntriesWithCommentsByUserId($userId) {
+    if (permitted($userId)) {
+        $query = 'SELECT id, private, body, (SELECT count(*) FROM comments WHERE entry_id = entries.id) AS comment_count, created_at FROM entries WHERE user_id = ? ORDER BY created_at DESC LIMIT 20';
+    } else {
+        $query = 'SELECT id, private, body, (SELECT count(*) FROM comments WHERE entry_id = entries.id) AS comment_count, created_at FROM entries WHERE user_id = ? AND private=0 ORDER BY created_at DESC LIMIT 20';
+    }
+    $entries = array();
+    $stmt = db_execute($query, array($userId));
+    while ($entry = $stmt->fetch()) {
+        $entry['is_private'] = ($entry['private'] == 1);
+        list($title, $content) = preg_split('/\n/', $entry['body'], 2);
+        $entry['title'] = $title;
+        $entry['content'] = $content;
+        $entries[] = $entry;
+    }
+    return $entries;
+}
+
 function getCommentsForMe() {
         $comments_for_me_query = <<<SQL
 SELECT c.id AS id, c.entry_id AS entry_id, c.user_id AS user_id, c.comment AS comment, c.created_at AS created_at
@@ -484,20 +502,7 @@ SQL;
 $app->get('/diary/entries/:account_name', function ($account_name) use ($app) {
     authenticated();
     $owner = user_from_account($account_name);
-    if (permitted($owner['id'])) {
-        $query = 'SELECT id, private, body, (SELECT count(*) FROM comments WHERE entry_id = entries.id) AS comment_count, created_at FROM entries WHERE user_id = ? ORDER BY created_at DESC LIMIT 20';
-    } else {
-        $query = 'SELECT id, private, body, (SELECT count(*) FROM comments WHERE entry_id = entries.id) AS comment_count, created_at FROM entries WHERE user_id = ? AND private=0 ORDER BY created_at DESC LIMIT 20';
-    }
-    $entries = array();
-    $stmt = db_execute($query, array($owner['id']));
-    while ($entry = $stmt->fetch()) {
-        $entry['is_private'] = ($entry['private'] == 1);
-        list($title, $content) = preg_split('/\n/', $entry['body'], 2);
-        $entry['title'] = $title;
-        $entry['content'] = $content;
-        $entries[] = $entry;
-    }
+    $entries = getEntriesWithCommentsByUserId($owner['id']);
     mark_footprint($owner['id']);
     $locals = array(
         'owner' => $owner,
