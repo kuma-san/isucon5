@@ -529,7 +529,7 @@ $app->post('/friends/:account_name', function ($account_name) use ($app) {
         if (!$user) abort_content_not_found();
         db_execute('INSERT INTO relations (one, another) VALUES (?,?), (?,?)', array(current_user()['id'], $user['id'], $user['id'], current_user()['id']));
 
-        $key = 'isucon_user_' . $one . '_' . $another;
+        $key = 'isucon_user_' . min(current_user()['id'], $user['id']) . '_' . max(current_user()['id'], $user['id']);
         redis()->set($key, json_encode(true));
         $app->redirect('/friends');
     }
