@@ -195,12 +195,23 @@ function user_from_account($account_name)
 }
 
 // アカウントIDを指定してフレンドのアカウントならtrue
+// アカウントIDを指定してフレンドのアカウントならtrue
 function is_friend($another_id)
 {
+    static $is_friend = array();
+    if (isset($is_friend[$another_id])) {
+        return $is_friend[$another_id];
+    }
+
     $user_id = $_SESSION['user_id'];
     $query = 'SELECT COUNT(1) AS cnt FROM relations WHERE one = ? AND another = ?';
     $cnt = db_execute($query, array($user_id, $another_id))->fetch()['cnt'];
-    return $cnt > 0 ? true : false;
+    if ($cnt > 0) {
+        $is_friend[$another_id] = true;
+    } else {
+        $is_friend[$another_id] = false;
+    }
+    return $is_friend[$another_id];
 }
 
 // アカウント名を指定してフレンドのアカウントならtrue
