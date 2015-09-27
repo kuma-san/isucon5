@@ -285,8 +285,7 @@ SQL;
     $entries_of_friends = array();
     $eof_query = <<<SQL
 SELECT * FROM entries
-INNER JOIN relations ON entries.user_id = relations.one
-WHERE relations.another = ?
+WHERE (SELECT 1 FROM relations WHERE one = entries.user_id AND another = ?) = 1
 ORDER BY created_at DESC LIMIT 10
 SQL;
     $stmt = db_execute($eof_query, array($_SESSION['user_id']));
@@ -301,8 +300,7 @@ SQL;
     $comments_of_friends = array();
     $cof_query = <<<SQL
 SELECT * FROM comments
-INNER JOIN relations ON comments.user_id = relations.one
-WHERE relations.another = ?
+WHERE (SELECT 1 FROM relations WHERE one = comments.user_id AND another = ?) = 1
 ORDER BY created_at DESC LIMIT 10
 SQL;
     $stmt = db_execute($cof_query, array($_SESSION['user_id']));
