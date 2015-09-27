@@ -195,23 +195,32 @@ function user_from_account($account_name)
 }
 
 // アカウントIDを指定してフレンドのアカウントならtrue
-// アカウントIDを指定してフレンドのアカウントならtrue
 function is_friend($another_id)
 {
-    static $is_friend = array();
-    if (isset($is_friend[$another_id])) {
-        return $is_friend[$another_id];
-    }
+    static $is_friends = array();
 
     $user_id = $_SESSION['user_id'];
-    $query = 'SELECT COUNT(1) AS cnt FROM relations WHERE one = ? AND another = ?';
-    $cnt = db_execute($query, array($user_id, $another_id))->fetch()['cnt'];
-    if ($cnt > 0) {
-        $is_friend[$another_id] = true;
-    } else {
-        $is_friend[$another_id] = false;
+
+    $one = min($user_id, $another_id);
+    $another = max($user_id, $another_id);
+
+    $key = 'isucon_user_' . $one . '_' . $another;
+
+    if (isset($is_friends[$key])) {
+        return $is_friends[$key];
     }
-    return $is_friend[$another_id];
+
+    $cache = redis()->get($key);
+    if ($cache !== false) {
+        return $is_friends[$key] = json_decode($cache, true);
+    }
+
+    $query = 'SELECT COUNT(1) AS cnt FROM relations WHERE one = ? AND another = ?';
+
+    $cnt = db_execute($query, array($one, $another))->fetch()['cnt'];
+
+    redis()->set($key, json_encode($cnt > 0));
+    return $is_friends[$key] = $cnt > 0;
 }
 
 // アカウント名を指定してフレンドのアカウントならtrue
@@ -309,16 +318,21 @@ SQL;
     }
 
     $comments_of_friends = array();
-    $stmt = db_execute('SELECT * FROM comments ORDER BY created_at DESC LIMIT 1000');
+    $cof_query = <<<SQL
+SELECT * FROM comments
+INNER JOIN entry ON entry.id = comments.entry_id
+WHERE (SELECT 1 FROM relations WHERE relations.one = comments.user_id AND relations.another = ?) = 1
+ORDER BY created_at DESC LIMIT 10
+SQL;
+    $stmt = db_execute($cof_query, array($_SESSION['user_id'], $_SESSION['user_id'], $_SESSION['user_id']));
     while ($comment = $stmt->fetch()) {
-        if (!is_friend($comment['user_id'])) continue;
-        $entry = db_execute('SELECT * FROM entries WHERE id = ?', array($comment['entry_id']))->fetch();
-        $entry['is_private'] = ($entry['private'] == 1);
-        if ($entry['is_private'] && !permitted($entry['user_id'])) continue;
+        // if (!is_friend($comment['user_id'])) continue;
+        // $entry = db_execute('SELECT * FROM entries WHERE id = ?', array($comment['entry_id']))->fetch();
+        // $entry['is_private'] = ($entry['private'] == 1);
+        // if ($entry['is_private'] && !permitted($entry['user_id'])) continue;
         $comments_of_friends[] = $comment;
-        if (sizeof($comments_of_friends) >= 10) break;
+        // if (sizeof($comments_of_friends) >= 10) break;
     }
-
 
     $friends_query = 'SELECT * FROM relations WHERE one = ? OR another = ? ORDER BY created_at DESC';
     $friends = array();
