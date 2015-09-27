@@ -413,9 +413,9 @@ $app->get('/diary/entries/:account_name', function ($account_name) use ($app) {
     authenticated();
     $owner = user_from_account($account_name);
     if (permitted($owner['id'])) {
-        $query = 'SELECT * FROM entries WHERE user_id = ? ORDER BY created_at DESC LIMIT 20';
+        $query = 'SELECT id, private, body, (SELECT count(*) FROM comments WHERE entry_id = entries.id) AS comment_count, created_at FROM entries WHERE user_id = ? ORDER BY created_at DESC LIMIT 20';
     } else {
-        $query = 'SELECT * FROM entries WHERE user_id = ? AND private=0 ORDER BY created_at DESC LIMIT 20';
+        $query = 'SELECT id, private, body, (SELECT count(*) FROM comments WHERE entry_id = entries.id) AS comment_count, created_at FROM entries WHERE user_id = ? AND private=0 ORDER BY created_at DESC LIMIT 20';
     }
     $entries = array();
     $stmt = db_execute($query, array($owner['id']));
