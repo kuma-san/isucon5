@@ -257,8 +257,18 @@ function prefectures()
 }
 
 function getRecentComments() {
-    $stmt = db_execute('SELECT id, user_id, entry_id FROM comments ORDER BY created_at DESC LIMIT 1000');
-    // TODO
+    $cache = redis()->get('isucon_recent_comments');
+    if ($cache !== false) {
+        return json_decode($cache, true);
+    }
+
+    $stmt = db_execute('SELECT * FROM comments ORDER BY created_at DESC LIMIT 1000');
+    $comments = [];
+    while ($comment = $stmt->fetch()) {
+        $comments[] = $comment;
+    }
+    redis()->set('isucon_recent_comments', $comments);
+    return $comments;
 }
 
 // ログイン画面
@@ -323,13 +333,13 @@ SQL;
     }
 
     $comments_of_friends = array();
-    $stmt = db_execute('SELECT id, user_id, entry_id FROM comments ORDER BY created_at DESC LIMIT 1000');
-    while ($comment = $stmt->fetch()) {
+    $recent_comments = getRecentComments();
+    foreach ($recent_comments as $comment) {
         if (!is_friend($comment['user_id'])) continue;
         $entry = db_execute('SELECT * FROM entries WHERE id = ?', array($comment['entry_id']))->fetch();
         $entry['is_private'] = ($entry['private'] == 1);
         if ($entry['is_private'] && !permitted($entry['user_id'])) continue;
-        $comments_of_friends[] = db_execute('SELECT * FROM comments WHERE id = ?', array($comment['id']))->fetch();
+        $comments_of_friends[] = $comments;
         if (sizeof($comments_of_friends) >= 10) break;
     }
 
@@ -494,6 +504,7 @@ $app->post('/diary/comment/:entry_id', function ($entry_id) use ($app) {
     $query = 'INSERT INTO comments (entry_id, user_id, comment) VALUES (?,?,?)';
     $params = $app->request->params();
     db_execute($query, array($entry['id'], current_user()['id'], $params['comment']));
+    redis()->del('isucon_recent_comments');
     $app->redirect('/diary/entry/'.$entry['id']);
 });
 
