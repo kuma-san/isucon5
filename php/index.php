@@ -339,7 +339,7 @@ SQL;
         $entry = db_execute('SELECT * FROM entries WHERE id = ?', array($comment['entry_id']))->fetch();
         $entry['is_private'] = ($entry['private'] == 1);
         if ($entry['is_private'] && !permitted($entry['user_id'])) continue;
-        $comments_of_friends[] = $comments;
+        $comments_of_friends[] = $comment;
         if (sizeof($comments_of_friends) >= 10) break;
     }
 
