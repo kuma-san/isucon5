@@ -29,7 +29,7 @@ class Isucon5View extends \Slim\View
         include_once $XHPROF_ROOT . "/xhprof-0.9.3/xhprof_lib/utils/xhprof_runs.php";
 
         $xhprof_runs = new XHProfRuns_Default();
-        $run_id = $xhprof_runs->save_run($xhprof_data, "xhprof_testing_" . urlencode($_SERVER['REQUEST_URI']));
+        $run_id = $xhprof_runs->save_run($xhprof_data, "xhprof_testing_");
         return parent::render($template);
     }
 }
@@ -156,10 +156,22 @@ function authenticated()
 // アカウントIDを指定してユーザー情報を取得
 function get_user($user_id)
 {
-    // TODO キャッシュ
+    static $users = array();
+    if (isset($users[$user_id])) {
+        return $users[$user_id];
+    }
+
+    $key = 'isucon_user_id_' . $user_id;
+    $cache = redis()->get($key);
+    if ($cache !== false) {
+        return $users[$user_id] = json_decode($cache, true);
+    }
+
     $user = db_execute('SELECT * FROM users WHERE id = ?', array($user_id))->fetch();
     if (!$user) abort_content_not_found();
-    return $user;
+
+    redis()->set($key, json_encode($user));
+    return $users[$user_id] = $user;
 }
 
 // アカウント名を指定してユーザー情報を取得
