@@ -302,7 +302,7 @@ SQL;
 SELECT * FROM comments
 INNER JOIN entry ON entry.id = comments.entry_id
 WHERE (SELECT 1 FROM relations WHERE relations.one = comments.user_id AND relations.another = ?) = 1
-    AND (entry.is_private != 1 OR entry.user_id = ? OR entry.user_id = ? OR 1 =(SELECT 1 FROM relations WHERE one=?) AND another=entry.user_id)
+    AND (entry.is_private != 1 OR entry.user_id = ? OR 1 =(SELECT 1 FROM relations WHERE one=? AND another=entry.user_id))
 ORDER BY created_at DESC LIMIT 10
 SQL;
     $stmt = db_execute($cof_query, array($_SESSION['user_id'], $_SESSION['user_id'], $_SESSION['user_id']));
