@@ -156,16 +156,21 @@ function get_user($user_id)
 // アカウント名を指定してユーザー情報を取得
 function user_from_account($account_name)
 {
+    static $users = array();
+    if (isset($users[$account_name])) {
+        return $users[$account_name];
+    }
+
     $key = 'isucon_user_' + $account_name;
     $cache = redis()->get($key);
     if ($cache) {
-        return json_decode($cache);
+        return $users[$account_name] = json_decode($cache);
     }
     $user = db_execute('SELECT * FROM users WHERE account_name = ?', array($account_name))->fetch();
     if (!$user) abort_content_not_found();
 
     redis()->set($key, json_encode($user));
-    return $user;
+    return $users[$account_name] = $user;
 }
 
 // アカウントIDを指定してフレンドのアカウントならtrue
@@ -486,6 +491,7 @@ $app->get('/initialize', function () use ($app) {
     db_execute("DELETE FROM footprints WHERE id > 500000");
     db_execute("DELETE FROM entries WHERE id > 500000");
     db_execute("DELETE FROM comments WHERE id > 1500000");
+    redis()->flushall();
 });
 
 $app->run();
