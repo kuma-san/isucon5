@@ -172,7 +172,7 @@ function user_from_account($account_name)
 
     $key = 'isucon_user_' + $account_name;
     $cache = redis()->get($key);
-    if ($cache) {
+    if ($cache !== false) {
         return $users[$account_name] = json_decode($cache);
     }
     $user = db_execute('SELECT * FROM users WHERE account_name = ?', array($account_name))->fetch();
