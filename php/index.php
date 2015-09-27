@@ -93,6 +93,15 @@ function db_execute($query, $args = array())
     return $stmt;
 }
 
+function redis() {
+    static $redis;
+    if (!$redis) {
+        $redis = new Redis();
+        $redis->pconnect('127.0.0.1', 6379);
+    }
+    return $redis;
+}
+
 // メールアドレスとパスワードを指定して認証
 function authenticate($email, $password)
 {
@@ -147,9 +156,15 @@ function get_user($user_id)
 // アカウント名を指定してユーザー情報を取得
 function user_from_account($account_name)
 {
-    // TODO キャッシュ
+    $key = 'isucon_user_' + $account_name;
+    $cache = redis()->get($key);
+    if ($cache) {
+        return json_decode($cache);
+    }
     $user = db_execute('SELECT * FROM users WHERE account_name = ?', array($account_name))->fetch();
     if (!$user) abort_content_not_found();
+
+    redis()->set($key, json_encode($user));
     return $user;
 }
 

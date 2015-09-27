@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS users (
   `email` varchar(255) CHARACTER SET utf8 NOT NULL UNIQUE,
   `passhash` varchar(128) NOT NULL -- SHA2 512 non-binary (hex)
 ) DEFAULT CHARSET=utf8mb4;
-ALTER TABLE users ADD UNIQUE KEY `email_pass` (email, passhash);
 
 -- DROP TABLE IF EXISTS salts;
 CREATE TABLE IF NOT EXISTS salts (
