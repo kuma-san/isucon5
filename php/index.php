@@ -320,10 +320,10 @@ SQL;
     $comments_of_friends = array();
     $cof_query = <<<SQL
 SELECT * FROM comments
-INNER JOIN entry ON entry.id = comments.entry_id
+INNER JOIN entries ON entries.id = comments.entry_id
 WHERE (SELECT 1 FROM relations WHERE relations.one = comments.user_id AND relations.another = ?) = 1
-    AND (entry.is_private != 1 OR entry.user_id = ? OR (SELECT COUNT(1) AS cnt FROM relations WHERE one = entry.user_id AND another = ?)=1)
-ORDER BY created_at DESC LIMIT 10
+    AND (entries.is_private != 1 OR entries.user_id = ? OR (SELECT COUNT(1) AS cnt FROM relations WHERE one = entries.user_id AND another = ?)=1)
+ORDER BY comments.created_at DESC LIMIT 10
 SQL;
     $stmt = db_execute($cof_query, array($_SESSION['user_id'], $_SESSION['user_id'], $_SESSION['user_id']));
     while ($comment = $stmt->fetch()) {
