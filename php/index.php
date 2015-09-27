@@ -170,7 +170,7 @@ function user_from_account($account_name)
         return $users[$account_name];
     }
 
-    $key = 'isucon_user_' + $account_name;
+    $key = 'isucon_user_' . $account_name;
     $cache = redis()->get($key);
     if ($cache !== false) {
         return $users[$account_name] = json_decode($cache, true);
