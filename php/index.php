@@ -271,6 +271,24 @@ function getRecentComments() {
     return $comments;
 }
 
+function getEntry($id) {
+    static $entries = [];
+    if (isset($entries[$id])) {
+        return $entries[$id];
+    }
+
+    $key = 'isucon_entry_' . $id;
+    $cache = redis()->get($key);
+    if ($cache !== false) {
+        return $entries[$id] = json_decode($cache, true);
+    }
+
+    $entry = db_execute('SELECT * FROM entries WHERE id = ?', array($id))->fetch();
+
+    redis()->set($key, json_encode($entry));
+    return $entry;
+}
+
 // ログイン画面
 $app->get('/login', function () use ($app) {
     $app->view->setLayout(null);
@@ -336,7 +354,7 @@ SQL;
     $recent_comments = getRecentComments();
     foreach ($recent_comments as $comment) {
         if (!is_friend($comment['user_id'])) continue;
-        $entry = db_execute('SELECT * FROM entries WHERE id = ?', array($comment['entry_id']))->fetch();
+        $entry = getEntry($comment['entry_id']);
         $entry['is_private'] = ($entry['private'] == 1);
         if ($entry['is_private'] && !permitted($entry['user_id'])) continue;
         $comments_of_friends[] = $comment;
