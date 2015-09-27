@@ -412,7 +412,7 @@ ORDER BY updated DESC
 LIMIT 10
 SQL;
     $footpoints = db_execute($query, array(current_user()['id']))->fetchAll();
-    redis()->set('isucon_footpoints_' . current_user()['id'], $footpoints);
+    redis()->set('isucon_footpoints_' . current_user()['id'], json_encode($footpoints));
     return $footpoints;
 }
 
