@@ -2,6 +2,15 @@
 require_once 'vendor/autoload.php';
 
 xhprof_enable(XHPROF_FLAGS_CPU + XHPROF_FLAGS_MEMORY);
+register_shutdown_function(function() {
+    $xhprof_data = xhprof_disable();
+    $XHPROF_ROOT = dirname(__FILE__);
+    include_once $XHPROF_ROOT . "/xhprof-0.9.3/xhprof_lib/utils/xhprof_lib.php";
+    include_once $XHPROF_ROOT . "/xhprof-0.9.3/xhprof_lib/utils/xhprof_runs.php";
+
+    $xhprof_runs = new XHProfRuns_Default();
+    $xhprof_runs->save_run($xhprof_data, "xhprof_testing", time());
+});
 
 date_default_timezone_set('Asia/Tokyo');
 mb_internal_encoding('UTF-8');
@@ -23,13 +32,6 @@ class Isucon5View extends \Slim\View
             $template = $this->layout;
             $this->layout = null;
         }
-        $xhprof_data = xhprof_disable();
-        $XHPROF_ROOT = dirname(__FILE__);
-        include_once $XHPROF_ROOT . "/xhprof-0.9.3/xhprof_lib/utils/xhprof_lib.php";
-        include_once $XHPROF_ROOT . "/xhprof-0.9.3/xhprof_lib/utils/xhprof_runs.php";
-
-        $xhprof_runs = new XHProfRuns_Default();
-        $run_id = $xhprof_runs->save_run($xhprof_data, "xhprof_testing", time());
         return parent::render($template);
     }
 }
