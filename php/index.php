@@ -9,7 +9,7 @@ register_shutdown_function(function() {
     include_once $XHPROF_ROOT . "/xhprof-0.9.3/xhprof_lib/utils/xhprof_runs.php";
 
     $xhprof_runs = new XHProfRuns_Default();
-    $xhprof_runs->save_run($xhprof_data, "xhprof_testing", urlencode($_SERVER['REQUEST_URI']) . '_' . time());
+    $xhprof_runs->save_run($xhprof_data, "xhprof_testing", time());
 });
 
 date_default_timezone_set('Asia/Tokyo');
@@ -108,7 +108,7 @@ function redis() {
     static $redis;
     if (!$redis) {
         $redis = new Redis();
-        $redis->pconnect('127.0.0.1', 6379);
+        $redis->pconnect('/tmp/redis.sock');
     }
     return $redis;
 }
