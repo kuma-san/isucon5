@@ -318,13 +318,13 @@ SQL;
     }
 
     $comments_of_friends = array();
-    $stmt = db_execute('SELECT * FROM comments ORDER BY created_at DESC LIMIT 1000');
+    $stmt = db_execute('SELECT id, user_id, entry_id FROM comments ORDER BY created_at DESC LIMIT 1000');
     while ($comment = $stmt->fetch()) {
         if (!is_friend($comment['user_id'])) continue;
         $entry = db_execute('SELECT * FROM entries WHERE id = ?', array($comment['entry_id']))->fetch();
         $entry['is_private'] = ($entry['private'] == 1);
         if ($entry['is_private'] && !permitted($entry['user_id'])) continue;
-        $comments_of_friends[] = $comment;
+        $comments_of_friends[] = db_execute('SELECT * FROM comments WHERE id = ?', $comment['id'])->fetch();
         if (sizeof($comments_of_friends) >= 10) break;
     }
 
