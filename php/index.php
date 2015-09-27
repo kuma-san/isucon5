@@ -326,10 +326,11 @@ function getEntriesByUserId($userId) {
 }
 
 function getEntriesWithCommentsByUserId($userId) {
+    $query = '';
     if (permitted($userId)) {
-        $query = 'SELECT id, private, body, (SELECT count(*) FROM comments WHERE entry_id = entries.id) AS comment_count, created_at FROM entries WHERE user_id = ? ORDER BY created_at DESC LIMIT 20';
+        $query = 'SELECT id, private, body, (SELECT count(*) FROM comments WHERE entry_id = entries.id) AS comment_count, created_at FROM entries WHERE user_id = ? AND created_at > "2013-01-01" ORDER BY created_at DESC LIMIT 20';
     } else {
-        $query = 'SELECT id, private, body, (SELECT count(*) FROM comments WHERE entry_id = entries.id) AS comment_count, created_at FROM entries WHERE user_id = ? AND private=0 ORDER BY created_at DESC LIMIT 20';
+        $query = 'SELECT id, private, body, (SELECT count(*) FROM comments WHERE entry_id = entries.id) AS comment_count, created_at FROM entries WHERE user_id = ? AND created_at > "2013-01-01" AND private=0 ORDER BY created_at DESC LIMIT 20';
     }
     $entries = array();
     $stmt = db_execute($query, array($userId));
