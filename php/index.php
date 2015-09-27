@@ -283,29 +283,18 @@ SQL;
     $comments_for_me = db_execute($comments_for_me_query, array(current_user()['id']))->fetchAll();
 
     $entries_of_friends = array();
-    $eof_query = <<<SQL
-SELECT * FROM entries
-WHERE (SELECT 1 FROM relations WHERE relations.one = entries.user_id AND relations.another = ?) = 1
-ORDER BY created_at DESC LIMIT 10
-SQL;
-    $stmt = db_execute($eof_query, array($_SESSION['user_id']));
+    $stmt = db_execute('SELECT * FROM entries ORDER BY created_at DESC LIMIT 1000');
     while ($entry = $stmt->fetch()) {
-        // if (!is_friend($entry['user_id'])) continue;
+        if (!is_friend($entry['user_id'])) continue;
         list($title) = preg_split('/\n/', $entry['body']);
         $entry['title'] = $title;
         $entries_of_friends[] = $entry;
         if (sizeof($entries_of_friends) >= 10) break;
     }
-
     $comments_of_friends = array();
-    $cof_query = <<<SQL
-SELECT * FROM comments
-WHERE (SELECT 1 FROM relations WHERE relations.one = comments.user_id AND relations.another = ?) = 1
-ORDER BY created_at DESC LIMIT 10
-SQL;
-    $stmt = db_execute($cof_query, array($_SESSION['user_id']));
+    $stmt = db_execute('SELECT * FROM comments ORDER BY created_at DESC LIMIT 1000');
     while ($comment = $stmt->fetch()) {
-        // if (!is_friend($comment['user_id'])) continue;
+        if (!is_friend($comment['user_id'])) continue;
         $entry = db_execute('SELECT * FROM entries WHERE id = ?', array($comment['entry_id']))->fetch();
         $entry['is_private'] = ($entry['private'] == 1);
         if ($entry['is_private'] && !permitted($entry['user_id'])) continue;
