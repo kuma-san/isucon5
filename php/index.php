@@ -93,6 +93,7 @@ function db_execute($query, $args = array())
     return $stmt;
 }
 
+// メールアドレスとパスワードを指定して認証
 function authenticate($email, $password)
 {
     $query = <<<SQL
@@ -111,6 +112,7 @@ SQL;
     return $result;
 }
 
+// セッションに有効なユーザーIDが入っている場合、そのユーザーのオブジェクトを返す。
 function current_user()
 {
     static $user;
@@ -124,6 +126,7 @@ function current_user()
     return $user;
 }
 
+// ログインしているならtrue。セッションに有効なユーザーIDが入っているかどうか
 function authenticated()
 {
     global $app;
@@ -132,20 +135,25 @@ function authenticated()
     }
 }
 
+// アカウントIDを指定してユーザー情報を取得
 function get_user($user_id)
 {
+    // TODO キャッシュ
     $user = db_execute('SELECT * FROM users WHERE id = ?', array($user_id))->fetch();
     if (!$user) abort_content_not_found();
     return $user;
 }
 
+// アカウント名を指定してユーザー情報を取得
 function user_from_account($account_name)
 {
+    // TODO キャッシュ
     $user = db_execute('SELECT * FROM users WHERE account_name = ?', array($account_name))->fetch();
     if (!$user) abort_content_not_found();
     return $user;
 }
 
+// アカウントIDを指定してフレンドのアカウントならtrue
 function is_friend($another_id)
 {
     $user_id = $_SESSION['user_id'];
@@ -154,16 +162,19 @@ function is_friend($another_id)
     return $cnt > 0 ? true : false;
 }
 
+// アカウント名を指定してフレンドのアカウントならtrue
 function is_friend_account($account_name)
 {
     return is_friend(user_from_account($account_name)['id']);
 }
 
+// 自分かフレンドならtrue
 function permitted($another_id)
 {
     return $another_id == current_user()['id'] || is_friend($another_id);
 }
 
+// 自分から指定ユーザーへの足跡をつける
 function mark_footprint($user_id)
 {
     if ($user_id != current_user()['id']) {
@@ -172,6 +183,7 @@ function mark_footprint($user_id)
     }
 }
 
+// 地域一覧の取得
 function prefectures()
 {
     static $PREFS = array(
